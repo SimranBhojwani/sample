@@ -3,7 +3,7 @@ name: PreProd Freeze Window Check
 on:
   pull_request:
     branches:
-      - main   # change this to pre_prod in your real repo
+      - pre_prod  
   workflow_dispatch:
 
 jobs:
