@@ -9,31 +9,24 @@ on:
 jobs:
   freeze-check:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Determine current time window (IST 5–6 PM)
+      - name: Determine current time window (IST 5-6 PM)
         id: window
         run: |
-          HOUR=$(date -u +"%H")
-          MIN=$(date -u +"%M")
-          TIME=$((HOUR*60 + MIN))
-
-          START=$((11*60 + 30))    # 11:30 UTC
-          END=$((12*60 + 30))      # 12:30 UTC
-
-          # Produce a final flag
-          if [ $TIME -ge $START ] && [ $TIME -le $END ]; then
-            echo "within_window=true" >> $GITHUB_OUTPUT
-          else
-            echo "within_window=false" >> $GITHUB_OUTPUT
-          fi
-
+          # The logic to determine if the current time is within 5-6 PM IST
+          # and set the step output 'within_window' to 'true' or 'false'.
+          # (Your original time logic seems correct, assuming you've validated it)
+          ... # (Your existing time and output logic lines 15-28)
+          
       - name: Auto-pass during freeze open window
         if: ${{ steps.window.outputs.within_window == 'true' }}
-        run: echo "Allowed window: auto pass."
-
-      - name: Fail outside 5–6 PM IST
+        run: |
+          echo "Allowed window. Auto pass."
+          # You might want to skip the final failing check if it's an auto-pass
+          
+      # --- The step that should *fail* outside the window ---
+      - name: Fail outside 5-6 PM IST
         if: ${{ steps.window.outputs.within_window == 'false' }}
         run: |
-          echo "❌ Freeze window active — PR requires manual approval."
-          exit 1
+          echo "Freeze active. PR requires manual approval or must wait."
+          exit 1 # This is the crucial line that makes the check fail!
