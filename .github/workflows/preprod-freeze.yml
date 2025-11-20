@@ -46,7 +46,7 @@ jobs:
       - name: ✅ Auto-pass during merge window
         if: ${{ steps.window.outputs.within_window == 'true' }}
         run: |
-          echo "Merge window is OPEN. Check passes automatically."
+          echo "Bypass"
 
       - name: ❌ Fail outside merge window (Enforce Freeze)
         if: ${{ steps.window.outputs.within_window == 'false' }}
