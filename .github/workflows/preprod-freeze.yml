@@ -1,0 +1,39 @@
+name: PreProd Freeze Window Check
+
+on:
+  pull_request:
+    branches:
+      - main   # change this to pre_prod in your real repo
+  workflow_dispatch:
+
+jobs:
+  freeze-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine current time window (IST 5–6 PM)
+        id: window
+        run: |
+          # Current UTC time
+          HOUR=$(date -u +"%H")
+          MIN=$(date -u +"%M")
+          TIME=$((HOUR*60 + MIN))
+
+          # IST 5 PM = 11:30 UTC (690 mins)
+          # IST 6 PM = 12:30 UTC (750 mins)
+          START=$((11*60 + 30))
+          END=$((12*60 + 30))
+
+          echo "time=$TIME" >> $GITHUB_OUTPUT
+          echo "start=$START" >> $GITHUB_OUTPUT
+          echo "end=$END" >> $GITHUB_OUTPUT
+
+      - name: Auto-pass during 5–6 PM IST
+        if: ${{ steps.window.outputs.time >= steps.window.outputs.start && steps.window.outputs.time <= steps.window.outputs.end }}
+        run: echo "Allowed window: auto pass."
+
+      - name: Fail outside 5–6 PM IST (freeze active)
+        if: ${{ steps.window.outputs.time < steps.window.outputs.start || steps.window.outputs.time > steps.window.outputs.end }}
+        run: |
+          echo "❌ Freeze window active — PR requires manual approval to override."
+          exit 1
