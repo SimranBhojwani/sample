@@ -1,11 +1,9 @@
 name: PreProd Freeze Window Check
 
 on:
-  # Triggers when a pull request is opened, synchronized (new commit), or ready to merge
   pull_request:
     branches:
       - pre-prod # Ensure this matches your target branch name
-  # Allows manual triggering of the workflow
   workflow_dispatch:
 
 jobs:
@@ -13,49 +11,48 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📅 Determine current time window (5-6 PM IST / 11:30-12:30 UTC)
+      - name: 📅 Determine current time window (12-1 PM or 5-6 PM IST)
         id: window
         run: |
-          echo "Checking time window..."
+          echo "Checking time against two merge windows: 12-1 PM IST and 5-6 PM IST..."
           
-          # Get the current hour (H) and minute (M) in UTC, which is the runner's default
+          # Get the current hour (H) and minute (M) in UTC
           H=$(date -u +%H)
           M=$(date -u +%M)
           
           # Convert current time to total minutes past midnight UTC
           CURRENT_MINUTES=$((10#$H * 60 + 10#$M))
           
-          # Define the start and end of the 5:00 PM - 6:00 PM IST window in UTC minutes
-          # 5:00 PM IST (11:30 UTC) = 11*60 + 30 = 690 minutes
-          START_MINUTES=690
-          # 6:00 PM IST (12:30 UTC) = 12*60 + 30 = 750 minutes
-          END_MINUTES=750
+          # Define Window 1 (12:00 PM - 1:00 PM IST) in UTC minutes
+          W1_START=390  # 6:30 UTC
+          W1_END=450    # 7:30 UTC
 
-          # Check if current time is within the window [START, END)
-          if (( CURRENT_MINUTES >= START_MINUTES && CURRENT_MINUTES < END_MINUTES )); then
-            echo "Current Time ($H:$M UTC) is WITHIN the 5-6 PM IST merge window."
+          # Define Window 2 (5:00 PM - 6:00 PM IST) in UTC minutes
+          W2_START=690  # 11:30 UTC
+          W2_END=750    # 12:30 UTC
+
+          # Check if current time is within Window 1 OR Window 2
+          IS_W1=$(( CURRENT_MINUTES >= W1_START && CURRENT_MINUTES < W1_END ))
+          IS_W2=$(( CURRENT_MINUTES >= W2_START && CURRENT_MINUTES < W2_END ))
+          
+          if (( IS_W1 || IS_W2 )); then
+            echo "Current Time ($H:$M UTC) is WITHIN an active merge window."
             echo "::set-output name=within_window::true"
           else
-            echo "Current Time ($H:$M UTC) is OUTSIDE the 5-6 PM IST merge window."
+            echo "Current Time ($H:$M UTC) is OUTSIDE both merge windows."
             echo "::set-output name=within_window::false"
           fi
           
       - name: ✅ Auto-pass during merge window
-        # This step runs *only* if the time check passed
         if: ${{ steps.window.outputs.within_window == 'true' }}
         run: |
           echo "Merge window is OPEN. Check passes automatically."
-          # This step will complete successfully, allowing the PR to be merged 
-          # (assuming other required checks pass).
 
       - name: ❌ Fail outside merge window (Enforce Freeze)
-        # This step runs *only* if the time check failed
         if: ${{ steps.window.outputs.within_window == 'false' }}
         run: |
           echo "========================================================================="
-          echo "⚠️ MERGE FREEZE ACTIVE: Merges are only permitted between 5 PM and 6 PM IST."
+          echo "⚠️ MERGE FREEZE ACTIVE: Merges are only permitted during 12-1 PM IST OR 5-6 PM IST."
           echo "Please wait for the next merge window to open."
           echo "========================================================================="
-          # The 'exit 1' command is what forces the GitHub Actions job to fail, 
-          # blocking the merge.
           exit 1
