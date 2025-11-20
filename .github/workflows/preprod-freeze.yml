@@ -14,26 +14,26 @@ jobs:
       - name: Determine current time window (IST 5–6 PM)
         id: window
         run: |
-          # Current UTC time
           HOUR=$(date -u +"%H")
           MIN=$(date -u +"%M")
           TIME=$((HOUR*60 + MIN))
 
-          # IST 5 PM = 11:30 UTC (690 mins)
-          # IST 6 PM = 12:30 UTC (750 mins)
-          START=$((11*60 + 30))
-          END=$((12*60 + 30))
+          START=$((11*60 + 30))    # 11:30 UTC
+          END=$((12*60 + 30))      # 12:30 UTC
 
-          echo "time=$TIME" >> $GITHUB_OUTPUT
-          echo "start=$START" >> $GITHUB_OUTPUT
-          echo "end=$END" >> $GITHUB_OUTPUT
+          # Produce a final flag
+          if [ $TIME -ge $START ] && [ $TIME -le $END ]; then
+            echo "within_window=true" >> $GITHUB_OUTPUT
+          else
+            echo "within_window=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Auto-pass during 5–6 PM IST
-        if: "${{ steps.window.outputs.time >= steps.window.outputs.start && steps.window.outputs.time <= steps.window.outputs.end }}"
+      - name: Auto-pass during freeze open window
+        if: ${{ steps.window.outputs.within_window == 'true' }}
         run: echo "Allowed window: auto pass."
 
-      - name: Fail outside 5–6 PM IST (freeze active)
-        if: "${{ steps.window.outputs.time < steps.window.outputs.start || steps.window.outputs.time > steps.window.outputs.end }}"
+      - name: Fail outside 5–6 PM IST
+        if: ${{ steps.window.outputs.within_window == 'false' }}
         run: |
-          echo "❌ Freeze window active — PR requires manual approval to override."
+          echo "❌ Freeze window active — PR requires manual approval."
           exit 1
