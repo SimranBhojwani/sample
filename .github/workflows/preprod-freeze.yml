@@ -3,7 +3,7 @@ name: PreProd Freeze Window Check
 on:
   pull_request:
     branches:
-      - pre_prod  
+      - pre_prod
   workflow_dispatch:
 
 jobs:
@@ -29,11 +29,11 @@ jobs:
           echo "end=$END" >> $GITHUB_OUTPUT
 
       - name: Auto-pass during 5–6 PM IST
-        if: ${{ steps.window.outputs.time >= steps.window.outputs.start && steps.window.outputs.time <= steps.window.outputs.end }}
+        if: "${{ steps.window.outputs.time >= steps.window.outputs.start && steps.window.outputs.time <= steps.window.outputs.end }}"
         run: echo "Allowed window: auto pass."
 
       - name: Fail outside 5–6 PM IST (freeze active)
-        if: ${{ steps.window.outputs.time < steps.window.outputs.start || steps.window.outputs.time > steps.window.outputs.end }}
+        if: "${{ steps.window.outputs.time < steps.window.outputs.start || steps.window.outputs.time > steps.window.outputs.end }}"
         run: |
-          echo "Freeze window active — PR requires manual approval to override."
+          echo "❌ Freeze window active — PR requires manual approval to override."
           exit 1
